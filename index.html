@@ -149,14 +149,14 @@ document.getElementById('inb').onclick=close;
 
 (function(){
   const pl=document.querySelector('.player'),btn=document.getElementById('pp'),bar=document.getElementById('pb'),fill=document.getElementById('pf'),p1=document.getElementById('p1'),p2=document.getElementById('p2');
-  let f=null,playing=false,dur=0,pos=0,last=0,got=false,known=false,tries=0,started=false,t0=0;
+  let f=null,playing=false,dur=0,pos=0,last=0,got=false,known=false,tries=0,started=false,t0=0,plays=0;
   const FALLBACK=217776;
   const SRC='https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/happyrobotrecords/soran-5&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false';
   const send=o=>{try{f.contentWindow.postMessage(JSON.stringify(o),'*')}catch(e){}};
   const fmt=ms=>{const t=Math.floor((ms||0)/1000);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
   const ui=()=>{btn.innerHTML=playing?'&#10074;&#10074;':'&#9654;'};
   const show=()=>{p1.textContent=fmt(pos);if(dur){p2.textContent=fmt(dur);fill.style.width=Math.min(100,pos/dur*100)+'%'}};
-  const bind=()=>{['play','pause','finish','play_progress'].forEach(v=>send({method:'addEventListener',value:v}));send({method:'getDuration'});send({method:'getCurrentSound'});send({method:'setVolume',value:50})};
+  const bind=()=>{['play','pause','finish','play_progress'].forEach(v=>send({method:'addEventListener',value:v}));send({method:'getDuration'});send({method:'getCurrentSound'});send({method:'setVolume',value:50});if(playing&&!started)send({method:'play'})};
   window.addEventListener('message',e=>{
     if(e.origin!=='https://w.soundcloud.com')return;
     let d;try{d=JSON.parse(e.data)}catch(x){return}
@@ -175,6 +175,7 @@ document.getElementById('inb').onclick=close;
     send({method:'getPosition'});
     if(!known)send({method:'getDuration'});
     if(!got&&tries++<12)bind();
+    if(playing&&!started&&Date.now()-t0>2500&&plays++<8)send({method:'play'});
     if(!started&&Date.now()-t0>6000)started=true;
     if(started&&Date.now()-last>1500){pos+=500;if(!known&&pos>=dur){playing=false;pos=0;fill.style.width='0%';p1.textContent='0:00';ui();return}show()}
   },500);
@@ -185,7 +186,7 @@ document.getElementById('inb').onclick=close;
       f.setAttribute('allow','autoplay');f.title='audio';
       f.onload=()=>{bind();setTimeout(bind,800);setTimeout(bind,2000)};
       f.src=SRC;document.body.appendChild(f);
-      playing=true;started=false;t0=Date.now();ui();dur=FALLBACK;show();return;
+      playing=true;started=false;t0=Date.now();plays=0;ui();dur=FALLBACK;show();return;
     }
     send({method:playing?'pause':'play'});playing=!playing;ui();
   };
