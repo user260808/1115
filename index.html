@@ -149,7 +149,7 @@ document.getElementById('inb').onclick=close;
 
 (function(){
   const pl=document.querySelector('.player'),btn=document.getElementById('pp'),bar=document.getElementById('pb'),fill=document.getElementById('pf'),p1=document.getElementById('p1'),p2=document.getElementById('p2');
-  let f=null,playing=false,dur=0,pos=0,last=0,got=false,known=false,tries=0;
+  let f=null,playing=false,dur=0,pos=0,last=0,got=false,known=false,tries=0,started=false,t0=0;
   const FALLBACK=217776;
   const SRC='https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/happyrobotrecords/soran-5&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false';
   const send=o=>{try{f.contentWindow.postMessage(JSON.stringify(o),'*')}catch(e){}};
@@ -165,8 +165,8 @@ document.getElementById('inb').onclick=close;
     else if(m==='getDuration'&&typeof v==='number'){dur=v;known=true;show()}
     else if(m==='getCurrentSound'&&v){if(v.duration){dur=v.duration;known=true}show()}
     else if(m==='getPosition'&&typeof v==='number'){pos=v;last=Date.now();show()}
-    else if(m==='play_progress'&&v){pos=v.currentPosition;last=Date.now();if(!known&&v.relativePosition>0.01){dur=pos/v.relativePosition;known=true}show()}
-    else if(m==='play'){playing=true;ui();send({method:'setVolume',value:50})}
+    else if(m==='play_progress'&&v){started=true;pos=v.currentPosition;last=Date.now();if(!known&&v.relativePosition>0.01){dur=pos/v.relativePosition;known=true}show()}
+    else if(m==='play'){playing=true;started=true;ui();send({method:'setVolume',value:50})}
     else if(m==='pause'){playing=false;ui()}
     else if(m==='finish'){playing=false;pos=0;fill.style.width='0%';p1.textContent='0:00';ui()}
   });
@@ -174,8 +174,9 @@ document.getElementById('inb').onclick=close;
     if(!f||!playing)return;
     send({method:'getPosition'});
     if(!known)send({method:'getDuration'});
-    if(!got&&tries++<40)bind();
-    if(Date.now()-last>1500){pos+=500;if(!known&&pos>=dur){playing=false;pos=0;fill.style.width='0%';p1.textContent='0:00';ui();return}show()}
+    if(!got&&tries++<12)bind();
+    if(!started&&Date.now()-t0>6000)started=true;
+    if(started&&Date.now()-last>1500){pos+=500;if(!known&&pos>=dur){playing=false;pos=0;fill.style.width='0%';p1.textContent='0:00';ui();return}show()}
   },500);
   const toggle=()=>{
     if(!f){
@@ -184,7 +185,7 @@ document.getElementById('inb').onclick=close;
       f.setAttribute('allow','autoplay');f.title='audio';
       f.onload=()=>{bind();setTimeout(bind,800);setTimeout(bind,2000)};
       f.src=SRC;document.body.appendChild(f);
-      playing=true;ui();dur=FALLBACK;show();return;
+      playing=true;started=false;t0=Date.now();ui();dur=FALLBACK;show();return;
     }
     send({method:playing?'pause':'play'});playing=!playing;ui();
   };
