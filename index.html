@@ -151,7 +151,7 @@ document.getElementById('inb').onclick=close;
   const pl=document.querySelector('.player'),btn=document.getElementById('pp'),bar=document.getElementById('pb'),fill=document.getElementById('pf'),p1=document.getElementById('p1'),p2=document.getElementById('p2');
   let f=null,playing=false,dur=0,pos=0,last=0,got=false,known=false,tries=0,started=false,t0=0,plays=0;
   const FALLBACK=217776;
-  const SRC='https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/happyrobotrecords/soran-5&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false';
+  const SRC='https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/happyrobotrecords/soran-5&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false';
   const send=o=>{try{f.contentWindow.postMessage(JSON.stringify(o),'*')}catch(e){}};
   const fmt=ms=>{const t=Math.floor((ms||0)/1000);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
   const ui=()=>{btn.innerHTML=playing?'&#10074;&#10074;':'&#9654;'};
@@ -175,24 +175,25 @@ document.getElementById('inb').onclick=close;
     send({method:'getPosition'});
     if(!known)send({method:'getDuration'});
     if(!got&&tries++<12)bind();
-    if(playing&&!started&&Date.now()-t0>2500&&plays++<8)send({method:'play'});
-    if(!started&&Date.now()-t0>6000)started=true;
+    if(playing&&!started&&Date.now()-t0>1200&&plays++<8)send({method:'play'});
+    if(!started&&Date.now()-t0>4000)started=true;
     if(started&&Date.now()-last>1500){pos+=500;if(!known&&pos>=dur){playing=false;pos=0;fill.style.width='0%';p1.textContent='0:00';ui();return}show()}
   },500);
+  f=document.createElement('iframe');
+  f.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0;left:0;top:0';
+  f.setAttribute('allow','autoplay');f.title='audio';
+  f.onload=()=>{bind();setTimeout(bind,800);setTimeout(bind,2000)};
+  f.src=SRC;document.body.appendChild(f);
   const toggle=()=>{
-    if(!f){
-      f=document.createElement('iframe');
-      f.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0;left:0;top:0';
-      f.setAttribute('allow','autoplay');f.title='audio';
-      f.onload=()=>{bind();setTimeout(bind,800);setTimeout(bind,2000)};
-      f.src=SRC;document.body.appendChild(f);
-      playing=true;started=false;t0=Date.now();plays=0;ui();dur=FALLBACK;show();return;
+    if(!started){
+      playing=true;t0=Date.now();plays=0;ui();if(!dur)dur=FALLBACK;show();
+      send({method:'setVolume',value:50});send({method:'play'});return;
     }
     send({method:playing?'pause':'play'});playing=!playing;ui();
   };
   btn.onclick=toggle;
   document.getElementById('ptab').onclick=()=>pl.classList.toggle('show');
-  m.addEventListener('click',()=>{if(!f&&window.matchMedia('(max-width:760px)').matches)toggle()});
+  m.addEventListener('click',()=>{if(!playing&&!started&&window.matchMedia('(max-width:760px)').matches)toggle()});
   bar.onclick=e=>{const r=bar.getBoundingClientRect();if(f&&dur){const t=dur*(e.clientX-r.left)/r.width;send({method:'seekTo',value:t});pos=t;show()}};
 })();
 </script>
