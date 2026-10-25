@@ -147,7 +147,7 @@ document.getElementById('inb').onclick=close;
   const fmt=ms=>{const t=Math.floor((ms||0)/1000);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
   const ui=()=>{btn.innerHTML=playing?'&#10074;&#10074;':'&#9654;'};
   const show=()=>{p1.textContent=fmt(pos);if(dur){p2.textContent=fmt(dur);fill.style.width=Math.min(100,pos/dur*100)+'%'}};
-  const bind=()=>{['play','pause','finish','play_progress'].forEach(v=>send({method:'addEventListener',value:v}));send({method:'getDuration'});send({method:'getCurrentSound'})};
+  const bind=()=>{['play','pause','finish','play_progress'].forEach(v=>send({method:'addEventListener',value:v}));send({method:'getDuration'});send({method:'getCurrentSound'});send({method:'setVolume',value:50})};
   window.addEventListener('message',e=>{
     if(e.origin!=='https://w.soundcloud.com')return;
     let d;try{d=JSON.parse(e.data)}catch(x){return}
@@ -157,7 +157,7 @@ document.getElementById('inb').onclick=close;
     else if(m==='getCurrentSound'&&v){dur=v.duration||dur;show()}
     else if(m==='getPosition'&&typeof v==='number'){pos=v;last=Date.now();show()}
     else if(m==='play_progress'&&v){pos=v.currentPosition;last=Date.now();if(!dur&&v.relativePosition>0)dur=pos/v.relativePosition;show()}
-    else if(m==='play'){playing=true;ui()}
+    else if(m==='play'){playing=true;ui();send({method:'setVolume',value:50})}
     else if(m==='pause'){playing=false;ui()}
     else if(m==='finish'){playing=false;pos=0;fill.style.width='0%';p1.textContent='0:00';ui()}
   });
